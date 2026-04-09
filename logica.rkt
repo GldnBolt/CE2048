@@ -2,29 +2,42 @@
 
 (provide m
          n
+         origen-x
+         origen-y
+         ancho-tablero
+         alto-tablero
          ancho-celda
          alto-celda
          tablero-inicial
          mover-tablero
          mover-y-crear
-         valor-en)
+         valor-en
+         gano?
+         perdio?)
 
-;TAMAÑO DEL TABLERO
+
+; CONFIGURACION DEL TABLERO
+; Cambio estos valores cuando quiera
 (define m 4) ; filas
 (define n 4) ; columnas
 
-;MEDIDAS DE CADA CELDA
-(define ancho-celda (/ 400 n))
-(define alto-celda (/ 400 m))
+(define origen-x 200)
+(define origen-y 50)
 
-;TABLERO VACIO
+(define ancho-tablero 400)
+(define alto-tablero 400)
+
+(define ancho-celda (/ ancho-tablero n))
+(define alto-celda (/ alto-tablero m))
+
+
+; FUNCIONES BASICAS DE TABLERO
 (define (fila-vacia)
   (make-list n 0))
 
 (define (tablero-vacio)
   (build-list m (lambda (x) (fila-vacia))))
 
-;REEMPLAZAR UN VALOR EN UNA LISTA
 (define (reemplazar-en-lista lst pos valor)
   (cond
     [(null? lst) '()]
@@ -32,26 +45,25 @@
     [else (cons (car lst)
                 (reemplazar-en-lista (cdr lst) (sub1 pos) valor))]))
 
-;PONER UN VALOR EN EL TABLERO
 (define (poner-valor tablero fil col valor)
   (reemplazar-en-lista
    tablero
    fil
    (reemplazar-en-lista (list-ref tablero fil) col valor)))
 
-;OBTENER VALOR DE UNA POSICION
 (define (valor-en tablero fil col)
   (list-ref (list-ref tablero fil) col))
 
-;BUSCAR POSICIONES VACIAS
 (define (posiciones-vacias tablero)
   (for*/list ([fil (in-range m)]
               [col (in-range n)]
               #:when (= (valor-en tablero fil col) 0))
     (list fil col)))
 
-;AGREGAR UN 2 EN UNA POSICION VACIA ALEATORIA
-(define (agregar-2-aleatorio tablero)
+
+; GENERACION DE BALDOSAS
+; Inicialmente solo deben aparecer 2
+(define (agregar-2-inicial tablero)
   (define vacias (posiciones-vacias tablero))
   (if (null? vacias)
       tablero
@@ -60,18 +72,30 @@
              [col (second p)])
         (poner-valor tablero fil col 2))))
 
-;TABLERO INICIAL CON DOS 2
+
+(define (nuevo-valor)
+  (if (< (random 10) 9) 2 4)) 
+
+(define (agregar-baldosa-aleatoria tablero)
+  (define vacias (posiciones-vacias tablero))
+  (if (null? vacias)
+      tablero
+      (let* ([p (list-ref vacias (random (length vacias)))]
+             [fil (first p)]
+             [col (second p)])
+        (poner-valor tablero fil col (nuevo-valor)))))
+
 (define (tablero-inicial)
-  (agregar-2-aleatorio
-   (agregar-2-aleatorio
+  (agregar-2-inicial
+   (agregar-2-inicial
     (tablero-vacio))))
 
-;QUITAR CEROS DE UNA FILA
+
+; MOVIMIENTO Y FUSION
 (define (quitar-ceros fila)
   (filter (lambda (x) (not (= x 0))) fila))
 
-;FUSIONAR NUMEROS IGUALES UNA SOLA VEZ
-;Ejemplo: (2 2 2 0 0) -> (4 2)
+; Fusiona una sola vez por movimiento
 (define (fusionar fila)
   (cond
     [(null? fila) '()]
@@ -83,25 +107,20 @@
      (cons (car fila)
            (fusionar (cdr fila)))]))
 
-;RELLENAR CON CEROS AL FINAL
 (define (rellenar-con-ceros fila largo)
   (append fila (make-list (- largo (length fila)) 0)))
 
-;MOVER UNA FILA A LA IZQUIERDA
 (define (mover-fila-izquierda fila)
   (rellenar-con-ceros
    (fusionar (quitar-ceros fila))
    (length fila)))
 
-;MOVER UNA FILA A LA DERECHA
 (define (mover-fila-derecha fila)
   (reverse (mover-fila-izquierda (reverse fila))))
 
-;TRANSPONER MATRIZ
 (define (transponer matriz)
   (apply map list matriz))
 
-;MOVER TABLERO SEGUN DIRECCION
 (define (mover-izquierda tablero)
   (map mover-fila-izquierda tablero))
 
@@ -126,9 +145,39 @@
     [(eq? direccion 'down)  (mover-abajo tablero)]
     [else tablero]))
 
-;MOVER Y CREAR UN NUEVO 2 SOLO SI EL TABLERO CAMBIO
 (define (mover-y-crear tablero direccion)
   (define nuevo-tablero (mover-tablero tablero direccion))
   (if (equal? nuevo-tablero tablero)
       tablero
-      (agregar-2-aleatorio nuevo-tablero)))
+      (agregar-baldosa-aleatoria nuevo-tablero)))
+
+
+; CONDICION DEl JUEGUSKI
+(define (gano? tablero)
+  (for/or ([fil (in-range m)])
+    (for/or ([col (in-range n)])
+      (= (valor-en tablero fil col) 2048))))
+
+(define (hay-vacias? tablero)
+  (not (null? (posiciones-vacias tablero))))
+
+(define (adyacentes-iguales-h? tablero)
+  (for*/or ([fil (in-range m)]
+            [col (in-range (sub1 n))])
+    (= (valor-en tablero fil col)
+       (valor-en tablero fil (add1 col)))))
+
+(define (adyacentes-iguales-v? tablero)
+  (for*/or ([fil (in-range (sub1 m))]
+            [col (in-range n)])
+    (= (valor-en tablero fil col)
+       (valor-en tablero (add1 fil) col))))
+
+(define (hay-movimientos? tablero)
+  (or (hay-vacias? tablero)
+      (adyacentes-iguales-h? tablero)
+      (adyacentes-iguales-v? tablero)))
+
+(define (perdio? tablero)
+  (and (not (gano? tablero))
+       (not (hay-movimientos? tablero))))
