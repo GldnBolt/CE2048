@@ -1,21 +1,22 @@
 #lang racket
 
-(require (lib "graphics.ss" "graphics"))
-(require "logica.rkt")
+(require (lib "graphics.ss" "graphics")) ; Importa la librería de gráficos
+(require "logica.rkt") ; Importa la lógica del juego definida en 'logica.rkt'
 
-(open-graphics)
+(open-graphics) ; Inicia el entorno gráfico
 
 ; VENTANAS
-(define ventana (open-viewport "JUEGO 2048" 800 500))
-(define oculta (open-pixmap "JUEGO 2048" 800 500))
+(define ventana (open-viewport "JUEGO 2048" 800 500)) ; Crea una ventana para el juego con un tamaño de 800x500
+(define oculta (open-pixmap "JUEGO 2048" 800 500)) ; Crea una "ventana oculta" para trabajar en el renderizado del juego
 
 ; AYUDAS GRAFICAS
 (define (entero x)
-  (inexact->exact (round x)))
+  (inexact->exact (round x))) ; Redondea el valor de x al número entero más cercano
 
 (define (mostrar-bienvenida)
-  (mostrar-bienvenida-aux (open-viewport "BIENVENIDOS" 430 250)))
+  (mostrar-bienvenida-aux (open-viewport "BIENVENIDOS" 430 250))) ; Abre una ventana de bienvenida
 
+; Mostrar mensaje de bienvenida con instrucciones en la pantalla
 (define (mostrar-bienvenida-aux ventana2)
   ((draw-viewport ventana2) "magenta")
   ((draw-string ventana2) (make-posn 80 95) "BIENVENIDOS AL JUEGO 2048" "white")
@@ -23,76 +24,86 @@
   (sleep 2)
   (close-viewport ventana2))
 
+; Función general para mostrar un mensaje en una ventana
 (define (mostrar-mensaje titulo color linea1 linea2)
   (mostrar-mensaje-aux (open-viewport titulo 380 180) titulo color linea1 linea2))
 
+; Función auxiliar para mostrar un mensaje dentro de una ventana
 (define (mostrar-mensaje-aux v titulo color linea1 linea2)
-  ((draw-viewport v) color)
-  ((draw-string v) (make-posn 145 55) titulo "white")
-  ((draw-string v) (make-posn 45 95) linea1 "white")
-  ((draw-string v) (make-posn 35 125) linea2 "white")
-  (sleep 3)
-  (close-viewport v))
+  ((draw-viewport v) color)  ; Establece el color de fondo de la ventana
+  ((draw-string v) (make-posn 145 55) titulo "white")  ; Título en blanco
+  ((draw-string v) (make-posn 45 95) linea1 "white")  ; Primera línea de mensaje
+  ((draw-string v) (make-posn 35 125) linea2 "white")  ; Segunda línea de mensaje
+  (sleep 3)  ; Muestra el mensaje por 3 segundos
+  (close-viewport v))  ; Cierra la ventana con el mensaje
 
+; Función para determinar el color de la celda según su valor
 (define (color-celda valor)
   (cond
-    [(= valor 0) "tan"]
-    [(= valor 2) "white"]
-    [(= valor 4) "yellow"]
-    [(= valor 8) "orange"]
-    [(= valor 16) "red"]
-    [(= valor 32) "magenta"]
-    [(= valor 64) "blue"]
-    [(= valor 128) "cyan"]
-    [(= valor 256) "green"]
-    [(= valor 512) "gray"]
-    [else "black"]))
+    [(= valor 0) "tan"]  ; Si la celda está vacía, es de color "tan"
+    [(= valor 2) "white"]  ; Valor 2 = blanco
+    [(= valor 4) "yellow"]  ; Valor 4 = amarillo
+    [(= valor 8) "orange"]  ; Valor 8 = naranja
+    [(= valor 16) "red"]  ; Valor 16 = rojo
+    [(= valor 32) "magenta"]  ; Valor 32 = magenta
+    [(= valor 64) "blue"]  ; Valor 64 = azul
+    [(= valor 128) "cyan"]  ; Valor 128 = cyan
+    [(= valor 256) "green"]  ; Valor 256 = verde
+    [(= valor 512) "gray"]  ; Valor 512 = gris
+    [else "black"]))  ; Los demás valores son negros
 
+; Función para determinar el color del texto según el valor de la celda
 (define (color-texto valor)
   (cond
-    [(<= valor 8) "black"]
-    [else "white"]))
+    [(<= valor 8) "black"]  ; Para valores bajos, texto negro
+    [else "white"]))  ; Para valores altos, texto blanco
 
+; Ajuste de la posición X para centrar el texto dentro de la celda
 (define (ajuste-x valor)
   (cond
-    [(< valor 10) (/ ancho-celda 2.4)]
-    [(< valor 100) (/ ancho-celda 3.2)]
-    [(< valor 1000) (/ ancho-celda 4.2)]
-    [else (/ ancho-celda 5.0)]))
+    [(< valor 10) (/ ancho-celda 2.4)]  ; Ajuste para valores pequeños
+    [(< valor 100) (/ ancho-celda 3.2)]  ; Ajuste para valores medianos
+    [(< valor 1000) (/ ancho-celda 4.2)]  ; Ajuste para valores grandes
+    [else (/ ancho-celda 5.0)]))  ; Ajuste para valores muy grandes
 
 ; DIBUJO
+
+; Dibuja el fondo del tablero en la ventana oculta
 (define (dibujar-fondo)
-  ((draw-solid-rectangle oculta) (make-posn 0 0) 800 500 "white")
-  ((draw-solid-rectangle oculta)
+  ((draw-solid-rectangle oculta) (make-posn 0 0) 800 500 "white")  ; Dibuja un fondo blanco
+  ((draw-solid-rectangle oculta)  ; Dibuja el área del tablero
    (make-posn (entero origen-x) (entero origen-y))
    (entero ancho-tablero)
    (entero alto-tablero)
-   "tan"))
+   "tan"))  ; Color "tan" para el área del tablero
 
+; Dibuja la información de la parte superior (instrucciones, tamaño del tablero, etc.)
 (define (dibujar-info)
-  ((draw-string oculta) (make-posn 20 25) "2048" "black")
-  ((draw-string oculta) (make-posn 20 50) "Use las flechas para mover las baldosas" "black")
-  ((draw-string oculta) (make-posn 20 75) "Presione Q para salir" "black")
-  ((draw-string oculta)
+  ((draw-string oculta) (make-posn 20 25) "2048" "black")  ; Muestra el título "2048"
+  ((draw-string oculta) (make-posn 20 50) "Use las flechas para mover las baldosas" "black")  ; Instrucciones
+  ((draw-string oculta) (make-posn 20 75) "Presione Q para salir" "black")  ; Instrucción para salir
+  ((draw-string oculta)  ; Muestra las dimensiones del tablero
    (make-posn 20 100)
    (string-append "Tablero: " (number->string m) "x" (number->string n))
    "black"))
 
+; Dibuja una celda específica en el tablero
 (define (dibujar-celda col fil valor)
   (dibujar-celda-aux
    valor
    (+ origen-x (* col ancho-celda))
    (+ origen-y (* fil alto-celda))
-   4))
+   4))  ; Ajuste de margen para centrar el texto
 
+; Función auxiliar para dibujar una celda con su valor y color
 (define (dibujar-celda-aux valor x y margen)
-  ((draw-solid-rectangle oculta)
+  ((draw-solid-rectangle oculta)  ; Dibuja la celda
    (make-posn (entero (+ x margen)) (entero (+ y margen)))
    (entero (- ancho-celda (* 2 margen)))
    (entero (- alto-celda (* 2 margen)))
-   (color-celda valor))
+   (color-celda valor))  ; Color según el valor de la celda
 
-  ((draw-rectangle oculta)
+  ((draw-rectangle oculta)  ; Dibuja el borde de la celda
    (make-posn (entero x) (entero y))
    (entero ancho-celda)
    (entero alto-celda)
@@ -101,70 +112,80 @@
   (cond
     [(= valor 0) #t]
     [else
-     ((draw-string oculta)
+     ((draw-string oculta) ; Dibuja el valor dentro de la celda
       (make-posn (entero (+ x (ajuste-x valor)))
-                 (entero (+ y (/ alto-celda 1.6))))
-      (number->string valor)
-      (color-texto valor))]))
+                 (entero (+ y (/ alto-celda 1.6)))) ; Ajusta la posición para centrar el número
+      (number->string valor) ; Convierte el valor a string para mostrarlo
+      (color-texto valor))])) ; Determina el color del texto
 
+; Dibuja el tablero completo
 (define (dibujar-tablero tablero)
-  (dibujar-filas tablero 0))
+  (dibujar-filas tablero 0))  ; Llama a la función de filas para recorrer todo el tablero
 
+; Dibuja las filas del tablero
 (define (dibujar-filas filas fil)
   (cond
-    [(null? filas) #t]
+    [(null? filas) #t]  ; Si no hay más filas, termina
     [else
-     (dibujar-columnas (car filas) fil 0)
-     (dibujar-filas (cdr filas) (add1 fil))]))
+     (dibujar-columnas (car filas) fil 0)  ; Dibuja las columnas de la fila actual
+     (dibujar-filas (cdr filas) (add1 fil))]))  ; Llama recursivamente para las siguientes filas
 
+; Dibuja las columnas dentro de una fila
 (define (dibujar-columnas fila fil col)
   (cond
-    [(null? fila) #t]
+    [(null? fila) #t]  ; Si no hay más columnas, termina
     [else
-     (dibujar-celda col fil (car fila))
-     (dibujar-columnas (cdr fila) fil (add1 col))]))
+     (dibujar-celda col fil (car fila))  ; Dibuja la celda en la posición actual
+     (dibujar-columnas (cdr fila) fil (add1 col))]))  ; Llama recursivamente para las siguientes columnas
 
+; Redibuja todo el tablero
 (define (redibujar tablero)
-  (dibujar-fondo)
-  (dibujar-info)
-  (dibujar-tablero tablero)
-  (copy-viewport oculta ventana))
+  (dibujar-fondo)  ; Dibuja el fondo
+  (dibujar-info)  ; Dibuja la información superior
+  (dibujar-tablero tablero)  ; Dibuja las celdas del tablero
+  (copy-viewport oculta ventana))  ; Copia el contenido de la ventana oculta a la ventana visible
 
 ; TECLADO
+
+; Verifica si la tecla presionada es una flecha
 (define (flecha? tecla)
-  (or (eq? tecla 'left)
+  (or (eq? tecla 'left)  ; Compara con las flechas
       (eq? tecla 'right)
       (eq? tecla 'up)
       (eq? tecla 'down)))
 
 ; BUCLE PRINCIPAL
+
+; Bucle principal del juego, dibuja el tablero y procesa los eventos
 (define (bucle-juego tablero)
-  (redibujar tablero)
+  (redibujar tablero)  ; Redibuja el tablero
   (cond
-    [(gano? tablero)
+    [(gano? tablero)  ; Si el jugador ganó
      (mostrar-mensaje "GANASTE" "green"
                       "Se detecto una baldosa con valor 2048."
                       "Juego terminado.")
-     (close-graphics)]
-    [(perdio? tablero)
+     (close-graphics)]  ; Cierra la ventana
+    [(perdio? tablero)  ; Si el jugador perdió
      (mostrar-mensaje "FIN DEL JUEGO" "red"
                       "No quedan movimientos posibles."
                       "Juego terminado.")
-     (close-graphics)]
+     (close-graphics)]  ; Cierra la ventana
     [else
-     (procesar-tecla tablero (key-value (get-key-press ventana)))]))
+     (procesar-tecla tablero (key-value (get-key-press ventana)))]))  ; Procesa la tecla presionada
 
+; Procesa la tecla presionada por el jugador
 (define (procesar-tecla tablero tecla)
   (cond
-    [(flecha? tecla)
+    [(flecha? tecla)  ; Si es una flecha, mueve las baldosas
      (bucle-juego (mover-y-crear tablero tecla))]
     [(and (char? tecla)
-          (or (char=? tecla #\q)
+          (or (char=? tecla #\q)  ; Si presiona Q, cierra el juego
               (char=? tecla #\Q)))
-     (close-graphics)]
+     (close-graphics)]  ; Cierra la ventana
     [else
-     (bucle-juego tablero)]))
+     (bucle-juego tablero)]))  ; Si no es una tecla válida, sigue el bucle
 
 ; INICIO
-(mostrar-bienvenida)
-(bucle-juego (tablero-inicial))
+
+(mostrar-bienvenida)  ; Muestra la pantalla de bienvenida
+(bucle-juego (tablero-inicial))  ; Inicia el bucle del juego con el tablero inicial
