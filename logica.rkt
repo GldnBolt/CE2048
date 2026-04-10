@@ -18,17 +18,17 @@
          perdio?)
 
 ; CONFIGURACION DEL TABLERO
-(define m 8)
-(define n 10)
+(define m 8)  ; Definimos el número de filas del tablero (8 en este caso)
+(define n 10)  ; Definimos el número de columnas del tablero (10 en este caso)
 
-(define origen-x 200)
-(define origen-y 50)
+(define origen-x 200)  ; Coordenada X para el origen del tablero en la pantalla
+(define origen-y 50)   ; Coordenada Y para el origen del tablero en la pantalla
 
-(define ancho-tablero 400)
-(define alto-tablero 400)
+(define ancho-tablero 400)  ; Ancho del tablero en píxeles
+(define alto-tablero 400)   ; Alto del tablero en píxeles
 
-(define ancho-celda (/ ancho-tablero n))
-(define alto-celda (/ alto-tablero m))
+(define ancho-celda (/ ancho-tablero n))  ; Ancho de cada celda en el tablero
+(define alto-celda (/ alto-tablero m))   ; Alto de cada celda en el tablero
 
 ; ACCESORES DE RESULTADOS
 (define (resultado-tablero resultado)
