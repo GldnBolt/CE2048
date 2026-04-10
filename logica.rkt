@@ -32,76 +32,76 @@
 
 ; ACCESORES DE RESULTADOS
 (define (resultado-tablero resultado)
-  (car resultado))
+  (car resultado))  ; Retorna el tablero de la estructura de resultado
 
 (define (resultado-puntos resultado)
-  (cadr resultado))
+  (cadr resultado))  ; Retorna los puntos acumulados de la estructura de resultado
 
 ; CREACION DE LISTAS Y TABLERO
 (define (crear-ceros cantidad)
   (cond
-    [(zero? cantidad) '()]
-    [else (cons 0 (crear-ceros (sub1 cantidad)))]))
+    [(zero? cantidad) '()]  ; Si no hay más celdas que crear, retornamos una lista vacía
+    [else (cons 0 (crear-ceros (sub1 cantidad)))]))  ; Agrega un 0 y continúa creando el resto de celdas
 
 (define (fila-vacia)
-  (crear-ceros n))
+  (crear-ceros n))  ; Crea una fila de n celdas vacías (todas con valor 0)
 
 (define (tablero-vacio)
-  (tablero-vacio-aux m))
+  (tablero-vacio-aux m))  ; Crea un tablero vacío con m filas
 
 (define (tablero-vacio-aux filas)
   (cond
-    [(zero? filas) '()]
+    [(zero? filas) '()]  ; Si no quedan filas por crear, retornamos una lista vacía
     [else
-     (cons (fila-vacia)
-           (tablero-vacio-aux (sub1 filas)))]))
+     (cons (fila-vacia)  ; Agrega una fila vacía
+           (tablero-vacio-aux (sub1 filas)))]))  ; Llama recursivamente para agregar el resto de filas
 
 ; ACCESO Y MODIFICACION
 (define (reemplazar-en-lista lst pos valor)
   (cond
-    [(null? lst) '()]
-    [(zero? pos) (cons valor (cdr lst))]
+    [(null? lst) '()]  ; Si la lista está vacía, no podemos reemplazar nada
+    [(zero? pos) (cons valor (cdr lst))]  ; Si llegamos a la posición deseada, reemplazamos el valor
     [else
      (cons (car lst)
-           (reemplazar-en-lista (cdr lst) (sub1 pos) valor))]))
+           (reemplazar-en-lista (cdr lst) (sub1 pos) valor))]))  ; Recursivamente buscamos la posición y reemplazamos
 
 (define (poner-valor tablero fil col valor)
   (reemplazar-en-lista
    tablero
-   fil
-   (reemplazar-en-lista (list-ref tablero fil) col valor)))
+   fil  ; Reemplaza el valor en la fila especificada
+   (reemplazar-en-lista (list-ref tablero fil) col valor)))  ; Reemplaza el valor en la columna especificada dentro de esa fila
 
 (define (valor-en tablero fil col)
-  (list-ref (list-ref tablero fil) col))
+  (list-ref (list-ref tablero fil) col))  ; Obtiene el valor en la posición (fil, col) del tablero
 
 ; POSICIONES VACIAS
 (define (posiciones-vacias tablero)
-  (posiciones-vacias-aux tablero 0 0))
+  (posiciones-vacias-aux tablero 0 0))  ; Busca todas las posiciones vacías en el tablero
 
 (define (posiciones-vacias-aux tablero fil col)
   (cond
-    [(= fil m) '()]
+    [(= fil m) '()]  ; Si hemos recorrido todas las filas, retornamos una lista vacía
     [(= col n)
-     (posiciones-vacias-aux tablero (add1 fil) 0)]
-    [(= (valor-en tablero fil col) 0)
-     (cons (list fil col)
-           (posiciones-vacias-aux tablero fil (add1 col)))]
+     (posiciones-vacias-aux tablero (add1 fil) 0)]  ; Si llegamos al final de una fila, pasamos a la siguiente
+    [(= (valor-en tablero fil col) 0)  ; Si la celda está vacía
+     (cons (list fil col)  ; Añadimos la posición (fila, columna) a la lista
+           (posiciones-vacias-aux tablero fil (add1 col)))]  ; Continuamos buscando en la siguiente columna
     [else
-     (posiciones-vacias-aux tablero fil (add1 col))]))
+     (posiciones-vacias-aux tablero fil (add1 col))]))  ; Si la celda no está vacía, pasamos a la siguiente columna
 
 (define (seleccionar-posicion-aleatoria posiciones)
   (cond
-    [(null? posiciones) '()]
-    [else (list-ref posiciones (random (length posiciones)))]))
+    [(null? posiciones) '()]  ; Si no hay posiciones vacías, retornamos una lista vacía
+    [else (list-ref posiciones (random (length posiciones)))]))  ; Seleccionamos una posición aleatoria
 
 (define (poner-en-posicion tablero posicion valor)
   (cond
-    [(null? posicion) tablero]
+    [(null? posicion) tablero]  ; Si no hay posición, retornamos el tablero sin cambios
     [else
      (poner-valor tablero
-                  (car posicion)
-                  (cadr posicion)
-                  valor)]))
+                  (car posicion)  ; Reemplazamos el valor en la fila indicada por la posición
+                  (cadr posicion)  ; Reemplazamos el valor en la columna indicada por la posición
+                  valor)]))  ; Colocamos el valor en la posición deseada
 
 ; GENERACION DE BALDOSAS
 (define (agregar-2-inicial tablero)
