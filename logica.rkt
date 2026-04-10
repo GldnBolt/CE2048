@@ -15,11 +15,9 @@
          gano?
          perdio?)
 
-
 ; CONFIGURACION DEL TABLERO
-; Cambio estos valores cuando quiera
-(define m 4) ; filas
-(define n 4) ; columnas
+(define m 8)
+(define n 10)
 
 (define origen-x 200)
 (define origen-y 50)
@@ -30,14 +28,25 @@
 (define ancho-celda (/ ancho-tablero n))
 (define alto-celda (/ alto-tablero m))
 
+; CREACION DE LISTAS Y TABLERO
+(define (crear-ceros cantidad)
+  (cond
+    [(zero? cantidad) '()]
+    [else (cons 0 (crear-ceros (sub1 cantidad)))]))
 
-; FUNCIONES BASICAS DE TABLERO
 (define (fila-vacia)
-  (make-list n 0))
+  (crear-ceros n))
 
 (define (tablero-vacio)
-  (build-list m (lambda (x) (fila-vacia))))
+  (tablero-vacio-aux m))
 
+(define (tablero-vacio-aux filas)
+  (cond
+    [(zero? filas) '()]
+    [else (cons (fila-vacia)
+                (tablero-vacio-aux (sub1 filas)))]))
+
+; ACCESO Y MODIFICACION
 (define (reemplazar-en-lista lst pos valor)
   (cond
     [(null? lst) '()]
@@ -54,48 +63,78 @@
 (define (valor-en tablero fil col)
   (list-ref (list-ref tablero fil) col))
 
+; POSICIONES VACIAS
 (define (posiciones-vacias tablero)
-  (for*/list ([fil (in-range m)]
-              [col (in-range n)]
-              #:when (= (valor-en tablero fil col) 0))
-    (list fil col)))
+  (posiciones-vacias-aux tablero 0 0))
 
+(define (posiciones-vacias-aux tablero fil col)
+  (cond
+    [(= fil m) '()]
+    [(= col n)
+     (posiciones-vacias-aux tablero (add1 fil) 0)]
+    [(= (valor-en tablero fil col) 0)
+     (cons (list fil col)
+           (posiciones-vacias-aux tablero fil (add1 col)))]
+    [else
+     (posiciones-vacias-aux tablero fil (add1 col))]))
+
+(define (seleccionar-posicion-aleatoria posiciones)
+  (cond
+    [(null? posiciones) '()]
+    [else (list-ref posiciones (random (length posiciones)))]))
+
+(define (poner-en-posicion tablero posicion valor)
+  (cond
+    [(null? posicion) tablero]
+    [else
+     (poner-valor tablero
+                  (car posicion)
+                  (cadr posicion)
+                  valor)]))
 
 ; GENERACION DE BALDOSAS
-; Inicialmente solo deben aparecer 2
 (define (agregar-2-inicial tablero)
-  (define vacias (posiciones-vacias tablero))
-  (if (null? vacias)
-      tablero
-      (let* ([p (list-ref vacias (random (length vacias)))]
-             [fil (first p)]
-             [col (second p)])
-        (poner-valor tablero fil col 2))))
-
+  (poner-en-posicion
+   tablero
+   (seleccionar-posicion-aleatoria (posiciones-vacias tablero))
+   2))
 
 (define (nuevo-valor)
-  (if (< (random 10) 9) 2 4)) 
+  (cond
+    [(< (random 10) 9) 2]
+    [else 4]))
 
 (define (agregar-baldosa-aleatoria tablero)
-  (define vacias (posiciones-vacias tablero))
-  (if (null? vacias)
-      tablero
-      (let* ([p (list-ref vacias (random (length vacias)))]
-             [fil (first p)]
-             [col (second p)])
-        (poner-valor tablero fil col (nuevo-valor)))))
+  (poner-en-posicion
+   tablero
+   (seleccionar-posicion-aleatoria (posiciones-vacias tablero))
+   (nuevo-valor)))
 
 (define (tablero-inicial)
   (agregar-2-inicial
    (agregar-2-inicial
     (tablero-vacio))))
 
+; UTILIDADES DE LISTAS
+(define (invertir lista)
+  (invertir-aux lista '()))
 
-; MOVIMIENTO Y FUSION
+(define (invertir-aux lista acumulada)
+  (cond
+    [(null? lista) acumulada]
+    [else
+     (invertir-aux (cdr lista)
+                   (cons (car lista) acumulada))]))
+
 (define (quitar-ceros fila)
-  (filter (lambda (x) (not (= x 0))) fila))
+  (cond
+    [(null? fila) '()]
+    [(= (car fila) 0)
+     (quitar-ceros (cdr fila))]
+    [else
+     (cons (car fila)
+           (quitar-ceros (cdr fila)))]))
 
-; Fusiona una sola vez por movimiento
 (define (fusionar fila)
   (cond
     [(null? fila) '()]
@@ -108,70 +147,117 @@
            (fusionar (cdr fila)))]))
 
 (define (rellenar-con-ceros fila largo)
-  (append fila (make-list (- largo (length fila)) 0)))
+  (append fila
+          (crear-ceros (- largo (length fila)))))
 
+; MOVIMIENTO DE FILAS
 (define (mover-fila-izquierda fila)
   (rellenar-con-ceros
    (fusionar (quitar-ceros fila))
    (length fila)))
 
 (define (mover-fila-derecha fila)
-  (reverse (mover-fila-izquierda (reverse fila))))
+  (invertir
+   (mover-fila-izquierda
+    (invertir fila))))
 
-(define (transponer matriz)
-  (apply map list matriz))
-
+; MOVIMIENTO DE TABLEROS
 (define (mover-izquierda tablero)
-  (map mover-fila-izquierda tablero))
+  (cond
+    [(null? tablero) '()]
+    [else
+     (cons (mover-fila-izquierda (car tablero))
+           (mover-izquierda (cdr tablero)))]))
 
 (define (mover-derecha tablero)
-  (map mover-fila-derecha tablero))
+  (cond
+    [(null? tablero) '()]
+    [else
+     (cons (mover-fila-derecha (car tablero))
+           (mover-derecha (cdr tablero)))]))
+
+(define (primeros matriz)
+  (cond
+    [(null? matriz) '()]
+    [else
+     (cons (caar matriz)
+           (primeros (cdr matriz)))]))
+
+(define (restos matriz)
+  (cond
+    [(null? matriz) '()]
+    [else
+     (cons (cdar matriz)
+           (restos (cdr matriz)))]))
+
+(define (transponer matriz)
+  (cond
+    [(null? matriz) '()]
+    [(null? (car matriz)) '()]
+    [else
+     (cons (primeros matriz)
+           (transponer (restos matriz)))]))
 
 (define (mover-arriba tablero)
   (transponer
-   (map mover-fila-izquierda
-        (transponer tablero))))
+   (mover-izquierda
+    (transponer tablero))))
 
 (define (mover-abajo tablero)
   (transponer
-   (map mover-fila-derecha
-        (transponer tablero))))
+   (mover-derecha
+    (transponer tablero))))
 
 (define (mover-tablero tablero direccion)
   (cond
-    [(eq? direccion 'left)  (mover-izquierda tablero)]
+    [(eq? direccion 'left) (mover-izquierda tablero)]
     [(eq? direccion 'right) (mover-derecha tablero)]
-    [(eq? direccion 'up)    (mover-arriba tablero)]
-    [(eq? direccion 'down)  (mover-abajo tablero)]
+    [(eq? direccion 'up) (mover-arriba tablero)]
+    [(eq? direccion 'down) (mover-abajo tablero)]
     [else tablero]))
 
 (define (mover-y-crear tablero direccion)
-  (define nuevo-tablero (mover-tablero tablero direccion))
-  (if (equal? nuevo-tablero tablero)
-      tablero
-      (agregar-baldosa-aleatoria nuevo-tablero)))
+  (mover-y-crear-aux tablero (mover-tablero tablero direccion)))
 
+(define (mover-y-crear-aux tablero nuevo-tablero)
+  (cond
+    [(equal? nuevo-tablero tablero) tablero]
+    [else (agregar-baldosa-aleatoria nuevo-tablero)]))
 
-; CONDICION DEl JUEGUSKI
+; CONDICIONES DEL JUEGO
+(define (fila-contiene? fila valor)
+  (cond
+    [(null? fila) #f]
+    [(= (car fila) valor) #t]
+    [else (fila-contiene? (cdr fila) valor)]))
+
+(define (tablero-contiene? tablero valor)
+  (cond
+    [(null? tablero) #f]
+    [(fila-contiene? (car tablero) valor) #t]
+    [else (tablero-contiene? (cdr tablero) valor)]))
+
 (define (gano? tablero)
-  (for/or ([fil (in-range m)])
-    (for/or ([col (in-range n)])
-      (= (valor-en tablero fil col) 2048))))
+  (tablero-contiene? tablero 2048))
 
 (define (hay-vacias? tablero)
   (not (null? (posiciones-vacias tablero))))
 
+(define (adyacentes-iguales-en-fila? fila)
+  (cond
+    [(null? fila) #f]
+    [(null? (cdr fila)) #f]
+    [(= (car fila) (cadr fila)) #t]
+    [else (adyacentes-iguales-en-fila? (cdr fila))]))
+
 (define (adyacentes-iguales-h? tablero)
-  (for*/or ([fil (in-range m)]
-            [col (in-range (sub1 n))])
-    (= (valor-en tablero fil col)
-       (valor-en tablero fil (add1 col)))))
+  (cond
+    [(null? tablero) #f]
+    [(adyacentes-iguales-en-fila? (car tablero)) #t]
+    [else (adyacentes-iguales-h? (cdr tablero))]))
 
 (define (adyacentes-iguales-v? tablero)
-  (for*/or ([fil (in-range (sub1 m))]
-            [col (in-range n)])
-    (= (valor-en tablero fil col)
-       (valor-en tablero (add1 fil) col))))
+  (adyacentes-iguales-h? (transponer tablero)))
 
 (define (hay-movimientos? tablero)
   (or (hay-vacias? tablero)
