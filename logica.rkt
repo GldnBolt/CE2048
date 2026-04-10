@@ -300,55 +300,45 @@
       (resultado-puntos resultado))]))  ; Retorna los puntos obtenidos
 
 ; CONDICIONES DEL JUEGO
-
-; Verifica si una fila contiene un valor específico
 (define (fila-contiene? fila valor)
   (cond
     [(null? fila) #f]  ; Si la fila está vacía, no contiene el valor
-    [(= (car fila) valor) #t]  ; Si el primer elemento de la fila es igual al valor, retornamos #t
-    [else (fila-contiene? (cdr fila) valor)]))  ; Si no, seguimos buscando en el resto de la fila
+    [(= (car fila) valor) #t]  ; Si encontramos el valor en la primera posición, retornamos #t
+    [else (fila-contiene? (cdr fila) valor)]))  ; Si no, buscamos en el resto de la fila
 
-; Verifica si el tablero contiene un valor específico en alguna de sus filas
 (define (tablero-contiene? tablero valor)
   (cond
     [(null? tablero) #f]  ; Si el tablero está vacío, no contiene el valor
-    [(fila-contiene? (car tablero) valor) #t]  ; Si la primera fila contiene el valor, retornamos #t
+    [(fila-contiene? (car tablero) valor) #t]  ; Si la fila contiene el valor, retornamos #t
     [else (tablero-contiene? (cdr tablero) valor)]))  ; Si no, buscamos en el resto del tablero
 
-; Verifica si el jugador ha ganado (si existe una baldosa con valor 2048 en el tablero)
 (define (gano? tablero)
   (tablero-contiene? tablero 2048))  ; Si el tablero contiene una baldosa con valor 2048, el jugador gana
 
-; Verifica si hay espacios vacíos en el tablero
 (define (hay-vacias? tablero)
-  (not (null? (posiciones-vacias tablero))))  ; Si existen posiciones vacías en el tablero, retorna #t
+  (not (null? (posiciones-vacias tablero))))  ; Verifica si hay posiciones vacías en el tablero
 
-; Verifica si hay celdas adyacentes con el mismo valor en una fila
 (define (adyacentes-iguales-en-fila? fila)
   (cond
-    [(null? fila) #f]  ; Si la fila está vacía, no hay celdas adyacentes iguales
-    [(null? (cdr fila)) #f]  ; Si solo hay un elemento, no hay adyacentes
-    [(= (car fila) (cadr fila)) #t]  ; Si el primer y el segundo valor son iguales, retornamos #t
-    [else (adyacentes-iguales-en-fila? (cdr fila))]))  ; Si no, seguimos buscando en el resto de la fila
+    [(null? fila) #f]  ; Si la fila está vacía, no hay adyacentes iguales
+    [(null? (cdr fila)) #f]
+    [(= (car fila) (cadr fila)) #t]
+    [else (adyacentes-iguales-en-fila? (cdr fila))]))
 
-; Verifica si alguna fila del tablero tiene celdas adyacentes con el mismo valor
 (define (adyacentes-iguales-h? tablero)
   (cond
-    [(null? tablero) #f]  ; Si el tablero está vacío, no tiene filas con adyacentes iguales
-    [(adyacentes-iguales-en-fila? (car tablero)) #t]  ; Si la primera fila tiene adyacentes iguales, retornamos #t
-    [else (adyacentes-iguales-h? (cdr tablero))]))  ; Si no, verificamos el resto del tablero
+    [(null? tablero) #f]
+    [(adyacentes-iguales-en-fila? (car tablero)) #t]
+    [else (adyacentes-iguales-h? (cdr tablero))]))
 
-; Verifica si hay celdas adyacentes iguales en las columnas del tablero
 (define (adyacentes-iguales-v? tablero)
-  (adyacentes-iguales-h? (transponer tablero)))  ; Transponemos el tablero y verificamos las filas (ahora columnas)
+  (adyacentes-iguales-h? (transponer tablero)))
 
-; Verifica si aún hay movimientos posibles en el tablero
 (define (hay-movimientos? tablero)
-  (or (hay-vacias? tablero)  ; Si hay espacios vacíos, se pueden hacer movimientos
-      (adyacentes-iguales-h? tablero)  ; Si hay adyacentes iguales en las filas, se pueden combinar
-      (adyacentes-iguales-v? tablero)))  ; Si hay adyacentes iguales en las columnas, también se pueden combinar
+  (or (hay-vacias? tablero)
+      (adyacentes-iguales-h? tablero)
+      (adyacentes-iguales-v? tablero)))
 
-; Verifica si el jugador ha perdido (si no hay movimientos posibles y no ha ganado)
 (define (perdio? tablero)
-  (and (not (gano? tablero))  ; Si no ha ganado
-       (not (hay-movimientos? tablero))))  ; Si no hay movimientos posibles, el jugador pierde
+  (and (not (gano? tablero))
+       (not (hay-movimientos? tablero))))
