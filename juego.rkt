@@ -46,6 +46,8 @@
     [(= valor 128) "cyan"]
     [(= valor 256) "green"]
     [(= valor 512) "gray"]
+    [(= valor 1024) "magenta"]
+    [(= valor 2048) "green"]
     [else "black"]))
 
 (define (color-texto valor)
@@ -60,6 +62,20 @@
     [(< valor 1000) (/ ancho-celda 4.2)]
     [else (/ ancho-celda 5.0)]))
 
+(define (brillo? valor)
+  (cond
+    [(>= valor 128) #t]
+    [else #f]))
+
+(define (color-brillo valor)
+  (cond
+    [(= valor 128) "white"]
+    [(= valor 256) "yellow"]
+    [(= valor 512) "cyan"]
+    [(= valor 1024) "magenta"]
+    [(= valor 2048) "green"]
+    [else "white"]))
+
 ; DIBUJO
 (define (dibujar-fondo)
   ((draw-solid-rectangle oculta) (make-posn 0 0) 800 500 "white")
@@ -69,23 +85,44 @@
    (entero alto-tablero)
    "tan"))
 
-(define (dibujar-info)
+(define (dibujar-info puntaje)
   ((draw-string oculta) (make-posn 20 25) "2048" "black")
   ((draw-string oculta) (make-posn 20 50) "Use las flechas para mover las baldosas" "black")
   ((draw-string oculta) (make-posn 20 75) "Presione Q para salir" "black")
   ((draw-string oculta)
    (make-posn 20 100)
    (string-append "Tablero: " (number->string m) "x" (number->string n))
+   "black")
+  ((draw-string oculta)
+   (make-posn 20 125)
+   (string-append "Puntaje: " (number->string puntaje))
    "black"))
+
+(define (dibujar-brillo valor x y)
+  ((draw-solid-rectangle oculta)
+   (make-posn (entero (+ x 1)) (entero (+ y 1)))
+   (entero (- ancho-celda 2))
+   (entero (- alto-celda 2))
+   (color-brillo valor))
+  ((draw-solid-rectangle oculta)
+   (make-posn (entero (+ x 2)) (entero (+ y 2)))
+   (entero (- ancho-celda 4))
+   (entero (- alto-celda 4))
+   (color-brillo valor)))
 
 (define (dibujar-celda col fil valor)
   (dibujar-celda-aux
    valor
    (+ origen-x (* col ancho-celda))
    (+ origen-y (* fil alto-celda))
-   4))
+   5))
 
 (define (dibujar-celda-aux valor x y margen)
+  (cond
+    [(brillo? valor)
+     (dibujar-brillo valor x y)]
+    [else #t])
+
   ((draw-solid-rectangle oculta)
    (make-posn (entero (+ x margen)) (entero (+ y margen)))
    (entero (- ancho-celda (* 2 margen)))
@@ -124,9 +161,9 @@
      (dibujar-celda col fil (car fila))
      (dibujar-columnas (cdr fila) fil (add1 col))]))
 
-(define (redibujar tablero)
+(define (redibujar tablero puntaje)
   (dibujar-fondo)
-  (dibujar-info)
+  (dibujar-info puntaje)
   (dibujar-tablero tablero)
   (copy-viewport oculta ventana))
 
@@ -138,33 +175,38 @@
       (eq? tecla 'down)))
 
 ; BUCLE PRINCIPAL
-(define (bucle-juego tablero)
-  (redibujar tablero)
+(define (bucle-juego tablero puntaje)
+  (redibujar tablero puntaje)
   (cond
     [(gano? tablero)
      (mostrar-mensaje "GANASTE" "green"
                       "Se detecto una baldosa con valor 2048."
-                      "Juego terminado.")
+                      (string-append "Puntaje: " (number->string puntaje)))
      (close-graphics)]
     [(perdio? tablero)
      (mostrar-mensaje "FIN DEL JUEGO" "red"
                       "No quedan movimientos posibles."
-                      "Juego terminado.")
+                      (string-append "Puntaje: " (number->string puntaje)))
      (close-graphics)]
     [else
-     (procesar-tecla tablero (key-value (get-key-press ventana)))]))
+     (procesar-tecla tablero puntaje (key-value (get-key-press ventana)))]))
 
-(define (procesar-tecla tablero tecla)
+(define (procesar-tecla tablero puntaje tecla)
   (cond
     [(flecha? tecla)
-     (bucle-juego (mover-y-crear tablero tecla))]
+     (procesar-resultado puntaje (mover-y-crear tablero tecla))]
     [(and (char? tecla)
           (or (char=? tecla #\q)
               (char=? tecla #\Q)))
      (close-graphics)]
     [else
-     (bucle-juego tablero)]))
+     (bucle-juego tablero puntaje)]))
+
+(define (procesar-resultado puntaje resultado)
+  (bucle-juego
+   (resultado-tablero resultado)
+   (+ puntaje (resultado-puntos resultado))))
 
 ; INICIO
 (mostrar-bienvenida)
-(bucle-juego (tablero-inicial))
+(bucle-juego (tablero-inicial) 0)
